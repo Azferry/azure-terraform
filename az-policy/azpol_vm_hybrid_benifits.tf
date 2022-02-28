@@ -10,7 +10,7 @@ resource "azurerm_policy_definition" "vm_benefits_policy" {
   name         = "VM - Enable Hybrid Benefits on Windows VM"
   policy_type  = "Custom"
   mode         = "Indexed"
-  # management_group_id = data.azurerm_management_group.mg.id ## Optional if you want to store the policy at the same location
+  management_group_name = data.azurerm_management_group.mg.name ## Optional if you want to store the policy at the same location
   display_name = "VM - Enable Hybrid Benefits on Windows Virtual Machines"
   description = "Appends the value for hybrid benifits for windows virtual machines"
 
