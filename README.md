@@ -34,7 +34,7 @@ $ACCOUNT_KEY=$(az storage account keys list --resource-group $RESOURCE_GROUP_NAM
 $env:ARM_ACCESS_KEY=$ACCOUNT_KEY
 ```
 
-## Terraform Init Remote State
+### Terraform Init Remote State
 
 ```powershell
 $RESOURCE_GROUP_NAME="<RESOURCE GROUP NAME>"
