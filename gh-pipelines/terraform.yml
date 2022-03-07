@@ -1,0 +1,71 @@
+
+
+name: 'Terraform Deploy'
+
+on:
+  push:
+    branches:
+    - main
+
+  pull_request:
+    branches:
+    - main
+  
+  workflow_dispatch:
+
+jobs:
+  terraform:
+    name: 'Terraform'
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      WORKING_DIR: './TF_MainDir'
+      TF_STATE_RG: ${{ secrets.TERRAFORM_STATE_RG }}
+      TF_STATE_SA: ${{ secrets.TERRAFORM_STATE_SA }}
+      TF_STATE_CONTAINER: ${{ secrets.BLOB_TF_STATE }}
+      TF_STATE_FILE: '<STATE FILE NAME>.tfstate'
+
+    defaults:
+      run:
+        shell: bash
+        working-directory: ${{ env.WORKING_DIR }}
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    
+    - name: Install Terraform on Agent
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y gnupg software-properties-common curl
+        curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo apt-key add -
+        sudo apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main"
+        sudo apt-get update
+        sudo apt-get install terraform
+        curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+
+    - name: Export Azure CLI Credentials
+      run: |
+        echo "ARM_CLIENT_ID=${{ secrets.ARM_CLIENT_ID }}" >> $GITHUB_ENV
+        echo "ARM_CLIENT_SECRET=${{ secrets.ARM_CLIENT_SECRET }}" >> $GITHUB_ENV
+        echo "ARM_SUBSCRIPTION_ID=${{ secrets.ARM_SUBSCRIPTION_ID }}" >> $GITHUB_ENV
+        echo "ARM_TENANT_ID=${{ secrets.ARM_TENANT_ID }}" >> $GITHUB_ENV
+        echo "ARM_ACCESS_KEY=${{ secrets.ARM_ACCESS_KEY }}" >> $GITHUB_ENV
+    
+    - name: Terraform Init
+      run: | 
+        terraform init -backend-config="resource_group_name= ${{ env.TF_STATE_RG }}" \
+          -backend-config="storage_account_name=${{ env.TF_STATE_SA }}" \
+          -backend-config="container_name=${{ env.TF_STATE_CONTAINER }}" \
+          -backend-config="key=${{ env.TF_STATE_FILE }}"
+
+    # Checks that all Terraform configuration files adhere to a canonical format
+    # - name: Terraform Format
+    #   run: terraform fmt -check
+
+    - name: Terraform Plan
+      run: terraform plan
+
+    - name: Terraform Apply
+      run: terraform apply -auto-approve 
